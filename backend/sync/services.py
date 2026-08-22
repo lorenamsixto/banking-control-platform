@@ -1,5 +1,6 @@
 import random
 import time
+import traceback
 from concurrent.futures import ProcessPoolExecutor
 
 from django.db import (
@@ -34,6 +35,12 @@ class PayloadInvalidoError(Exception):
 
 class BaseDatosNoDisponibleError(Exception):
     """PostgreSQL no está disponible después de los reintentos."""
+
+    pass
+
+
+class ProcesamientoInesperadoError(Exception):
+    """Ocurrió una falla inesperada durante el procesamiento."""
 
     pass
 
@@ -118,6 +125,42 @@ def registrar_error(
     )
 
 
+def registrar_fallo_inesperado(
+    sincronizacion,
+    exc,
+):
+    stack_trace = "".join(
+        traceback.format_exception(
+            type(exc),
+            exc,
+            exc.__traceback__,
+        )
+    )
+
+    with transaction.atomic():
+        registrar_error(
+            sincronizacion=sincronizacion,
+            servicio_responsable="Data_Worker",
+            nivel_error=LogError.NivelError.CRITICAL,
+            codigo_error="ERR_PROCESSING_FAILURE",
+            mensaje=(
+                "Ocurrió un error inesperado "
+                "durante el procesamiento."
+            ),
+            stack_trace=stack_trace,
+        )
+
+        sincronizacion.estado = Sincronizacion.Estado.FAILED
+        sincronizacion.finalizado_at = timezone.now()
+
+        sincronizacion.save(
+            update_fields=[
+                "estado",
+                "finalizado_at",
+            ]
+        )
+
+
 def ejecutar_con_reintentos_db(
     operacion,
     max_intentos=4,
@@ -140,23 +183,23 @@ def ejecutar_con_reintentos_db(
             delay_exponencial = base_delay * (2 ** intento)
             jitter = random.uniform(0, base_delay)
 
-            time.sleep(delay_exponencial + jitter)
+            time.sleep(
+                delay_exponencial + jitter
+            )
 
 
 def _guardar_resultado_procesamiento(
+    sincronizacion,
     archivo,
     tipo_archivo,
-    usuario_origen,
     checksum,
     payload=None,
     error_payload=None,
 ):
     with transaction.atomic():
-        sincronizacion = crear_sincronizacion(
-            usuario_origen=usuario_origen,
-        )
 
         sincronizacion.estado = Sincronizacion.Estado.RUNNING
+
         sincronizacion.save(
             update_fields=["estado"]
         )
@@ -180,7 +223,9 @@ def _guardar_resultado_procesamiento(
                 mensaje=str(error_payload),
             )
 
-            sincronizacion.estado = Sincronizacion.Estado.REJECTED
+            sincronizacion.estado = (
+                Sincronizacion.Estado.REJECTED
+            )
 
         else:
             archivo_procesado = registrar_archivo(
@@ -193,7 +238,9 @@ def _guardar_resultado_procesamiento(
                 datos_payload=payload,
             )
 
-            sincronizacion.estado = Sincronizacion.Estado.COMPLETED
+            sincronizacion.estado = (
+                Sincronizacion.Estado.COMPLETED
+            )
 
         sincronizacion.finalizado_at = timezone.now()
 
@@ -219,7 +266,9 @@ def procesar_archivo(
     )
 
     archivo_existente = ejecutar_con_reintentos_db(
-        lambda: buscar_archivo_por_checksum(checksum)
+        lambda: buscar_archivo_por_checksum(
+            checksum
+        )
     )
 
     if archivo_existente:
@@ -237,30 +286,62 @@ def procesar_archivo(
             str(exc)
         )
 
+    sincronizacion = ejecutar_con_reintentos_db(
+        lambda: crear_sincronizacion(
+            usuario_origen=usuario_origen
+        )
+    )
+
     def guardar():
         return _guardar_resultado_procesamiento(
+            sincronizacion=sincronizacion,
             archivo=archivo,
             tipo_archivo=tipo_archivo,
-            usuario_origen=usuario_origen,
             checksum=checksum,
             payload=payload,
             error_payload=error_payload,
         )
 
     try:
-        archivo_procesado = ejecutar_con_reintentos_db(
-            guardar
+        archivo_procesado = (
+            ejecutar_con_reintentos_db(
+                guardar
+            )
         )
 
     except IntegrityError:
-        archivo_existente = ejecutar_con_reintentos_db(
-            lambda: buscar_archivo_por_checksum(checksum)
+        ejecutar_con_reintentos_db(
+            lambda: sincronizacion.delete()
+        )
+
+        archivo_existente = (
+            ejecutar_con_reintentos_db(
+                lambda: buscar_archivo_por_checksum(
+                    checksum
+                )
+            )
         )
 
         if archivo_existente:
             return archivo_existente, False
 
         raise
+
+    except BaseDatosNoDisponibleError:
+        raise
+
+    except Exception as exc:
+        ejecutar_con_reintentos_db(
+            lambda: registrar_fallo_inesperado(
+                sincronizacion=sincronizacion,
+                exc=exc,
+            )
+        )
+
+        raise ProcesamientoInesperadoError(
+            "Ocurrió un error inesperado "
+            "durante el procesamiento."
+        ) from exc
 
     if error_payload is not None:
         raise error_payload
@@ -293,6 +374,7 @@ def ejecutar_remediacion(
                 sincronizacion.estado = (
                     Sincronizacion.Estado.PENDING
                 )
+
                 sincronizacion.finalizado_at = None
 
                 sincronizacion.save(
@@ -302,7 +384,10 @@ def ejecutar_remediacion(
                     ]
                 )
 
-            elif accion_ejecutada == "FORCE_SKIP_VALIDATION":
+            elif (
+                accion_ejecutada
+                == "FORCE_SKIP_VALIDATION"
+            ):
 
                 if (
                     sincronizacion.estado
@@ -316,7 +401,10 @@ def ejecutar_remediacion(
                 sincronizacion.estado = (
                     Sincronizacion.Estado.COMPLETED
                 )
-                sincronizacion.finalizado_at = timezone.now()
+
+                sincronizacion.finalizado_at = (
+                    timezone.now()
+                )
 
                 sincronizacion.save(
                     update_fields=[

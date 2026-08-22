@@ -1,3 +1,5 @@
+from django.db import connection
+
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -15,7 +17,13 @@ from .serializers import (
     RemediacionRequestSerializer,
     SincronizacionSerializer,
 )
-from .services import BaseDatosNoDisponibleError, PayloadInvalidoError, ejecutar_remediacion, procesar_archivo
+from .services import (
+    BaseDatosNoDisponibleError,
+    PayloadInvalidoError,
+    ProcesamientoInesperadoError,
+    ejecutar_remediacion,
+    procesar_archivo,
+)
 
 class SincronizacionListView(generics.ListAPIView):
     serializer_class = SincronizacionSerializer
@@ -167,6 +175,15 @@ class ProcesarArchivoView(APIView):
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        except ProcesamientoInesperadoError as exc:
+            return Response(
+                {
+                    "detail": str(exc),
+                    "codigo_error": "ERR_PROCESSING_FAILURE",
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+
         response_serializer = ArchivoProcesadoSerializer(
             archivo_procesado
         )
@@ -221,4 +238,19 @@ class DashboardMetricasView(APIView):
                 "sincronizaciones_fallidas": sincronizaciones_fallidas,
                 "archivos_rechazados": archivos_rechazados,
             }
+        )
+
+class HealthCheckView(APIView):
+
+    def get(self, request):
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT 1;")
+            cursor.fetchone()
+
+        return Response(
+            {
+                "status": "ok",
+                "database": "ok",
+            },
+            status=status.HTTP_200_OK,
         )

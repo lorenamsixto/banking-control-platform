@@ -1,0 +1,12 @@
+[run]
+source = sync
+omit =
+    */tests/*
+    */migrations/*
+    */__pycache__/*
+    sync/tests.py
+
+[report]
+show_missing = True
+skip_covered = False
+fail_under = 80

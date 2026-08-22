@@ -39,4 +39,9 @@ urlpatterns = [
         views.DashboardMetricasView.as_view(),
         name="dashboard-metricas",
     ),
+    path(
+        "health/",
+        views.HealthCheckView.as_view(),
+        name="health-check",
+    ),
 ]
