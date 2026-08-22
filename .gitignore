@@ -1,0 +1,64 @@
+# ==============================
+# Python
+# ==============================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# ==============================
+# Django
+# ==============================
+*.log
+db.sqlite3
+db.sqlite3-journal
+
+# Static / media generated files
+staticfiles/
+media/
+
+# ==============================
+# Environment variables / secrets
+# ==============================
+.env
+.env.*
+!.env.example
+
+# ==============================
+# Testing / coverage
+# ==============================
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# ==============================
+# IDE / Editors
+# ==============================
+.vscode/
+.idea/
+
+# ==============================
+# OS
+# ==============================
+.DS_Store
+Thumbs.db
+
+# ==============================
+# Node / React
+# ==============================
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# ==============================
+# Misc
+# ==============================
+*.tmp
+*.temp
