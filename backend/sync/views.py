@@ -3,12 +3,11 @@ from django.db import connection
 from rest_framework import generics, status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework.response import Response
 
 from django.db import models
 from django.shortcuts import get_object_or_404
 
-from .models import AccionRemediacion, ArchivoProcesado, LogError, Sincronizacion
+from .models import ArchivoProcesado, LogError, Sincronizacion
 from .serializers import (
     AccionRemediacionSerializer,
     ArchivoProcesadoSerializer,
@@ -24,6 +23,7 @@ from .services import (
     ejecutar_remediacion,
     procesar_archivo,
 )
+
 
 class SincronizacionListView(generics.ListAPIView):
     serializer_class = SincronizacionSerializer
@@ -239,6 +239,7 @@ class DashboardMetricasView(APIView):
                 "archivos_rechazados": archivos_rechazados,
             }
         )
+
 
 class HealthCheckView(APIView):
 

@@ -331,17 +331,19 @@ def procesar_archivo(
         raise
 
     except Exception as exc:
+        error_original = exc
+
         ejecutar_con_reintentos_db(
             lambda: registrar_fallo_inesperado(
                 sincronizacion=sincronizacion,
-                exc=exc,
+                exc=error_original,
             )
         )
 
         raise ProcesamientoInesperadoError(
             "Ocurrió un error inesperado "
             "durante el procesamiento."
-        ) from exc
+        ) from error_original
 
     if error_payload is not None:
         raise error_payload

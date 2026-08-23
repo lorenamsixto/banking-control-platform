@@ -2,8 +2,8 @@
 
 set -e
 
-echo "Deteniendo servicios..."
+echo "Realizando limpieza destructiva del entorno..."
 
-docker compose down --remove-orphans
+docker compose down -v --remove-orphans
 
-echo "Entorno detenido correctamente."
+echo "Contenedores, redes y volúmenes eliminados correctamente."

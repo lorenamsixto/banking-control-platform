@@ -3,6 +3,7 @@ import uuid
 from django.db import models
 from django.db.models.functions import Now
 
+
 class Sincronizacion(models.Model):
 
     class Estado(models.TextChoices):
@@ -64,10 +65,10 @@ class ArchivoProcesado(models.Model):
     sincronizacion = models.ForeignKey(Sincronizacion, on_delete=models.CASCADE, related_name="archivos_procesados")
     nombre_archivo = models.CharField(max_length=255)
     tipo_archivo = models.CharField(max_length=20, choices=TipoArchivo.choices)
-    checksum = models.CharField(max_length=64,unique=True)
+    checksum = models.CharField(max_length=64, unique=True)
     estado = models.CharField(max_length=20, choices=Estado.choices)
     registros_totales = models.IntegerField(default=0, db_default=0)
-    datos_payload = models.JSONField(null=True,blank=True)
+    datos_payload = models.JSONField(null=True, blank=True)
 
     class Meta:
         db_table = "archivos_procesados"
