@@ -449,3 +449,14 @@ body {
 .logs-virtual-scroller .log-item {
   min-height: 150px;
 }
+
+.sync-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+}
+
+.no-actions {
+  color: #94a3b8;
+}
