@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 
 import { api } from "../api/client";
+import LogsPanel from "../components/LogsPanel";
+import MetricCard from "../components/MetricCard";
+import SincronizacionesTable from "../components/SincronizacionesTable";
 import type { DashboardMetricas } from "../types";
 
 export default function Dashboard() {
@@ -8,14 +11,16 @@ export default function Dashboard() {
     useState<DashboardMetricas | null>(null);
 
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] =
+    useState<string | null>(null);
 
   useEffect(() => {
     const cargarMetricas = async () => {
       try {
-        const response = await api.get<DashboardMetricas>(
-          "/dashboard/metricas/"
-        );
+        const response =
+          await api.get<DashboardMetricas>(
+            "/dashboard/metricas/"
+          );
 
         setMetricas(response.data);
       } catch (error) {
@@ -36,40 +41,85 @@ export default function Dashboard() {
   }, []);
 
   if (loading) {
-    return <p>Cargando métricas...</p>;
+    return (
+      <main className="dashboard-page">
+        Cargando métricas...
+      </main>
+    );
   }
 
-  if (error) {
-    return <p>{error}</p>;
-  }
-
-  if (!metricas) {
-    return <p>No hay métricas disponibles.</p>;
+  if (error || !metricas) {
+    return (
+      <main className="dashboard-page">
+        {error ??
+          "No hay métricas disponibles."}
+      </main>
+    );
   }
 
   return (
-    <main>
-      <h1>Dashboard de Control de Fallas</h1>
+    <main className="dashboard-page">
+      <header className="dashboard-header">
+        <span className="dashboard-eyebrow">
+          Banking Control Platform
+        </span>
 
-      <p>
-        Sincronizaciones activas:{" "}
-        {metricas.sincronizaciones_activas}
-      </p>
+        <h1>
+          Dashboard de Control de Fallas
+        </h1>
 
-      <p>
-        Sincronizaciones completadas:{" "}
-        {metricas.sincronizaciones_completadas}
-      </p>
+        <p>
+          Monitoreo de sincronizaciones, archivos
+          rechazados y errores operativos.
+        </p>
+      </header>
 
-      <p>
-        Sincronizaciones fallidas:{" "}
-        {metricas.sincronizaciones_fallidas}
-      </p>
+      <section className="metrics-grid">
+        <MetricCard
+          title="Sincronizaciones activas"
+          value={
+            metricas.sincronizaciones_activas
+          }
+          icon="pi pi-sync"
+          variant="blue"
+        />
 
-      <p>
-        Archivos rechazados:{" "}
-        {metricas.archivos_rechazados}
-      </p>
+        <MetricCard
+          title="Sincronizaciones completadas"
+          value={
+            metricas.sincronizaciones_completadas
+          }
+          icon="pi pi-check-circle"
+          variant="green"
+        />
+
+        <MetricCard
+          title="Sincronizaciones fallidas"
+          value={
+            metricas.sincronizaciones_fallidas
+          }
+          icon="pi pi-times-circle"
+          variant="red"
+        />
+
+        <MetricCard
+          title="Archivos rechazados"
+          value={
+            metricas.archivos_rechazados
+          }
+          icon="pi pi-file"
+          variant="purple"
+        />
+      </section>
+
+      <SincronizacionesTable />
+
+      <LogsPanel />
+
+      <footer className="dashboard-footer">
+        © 2026 Banking Control Platform.
+        Todos los derechos reservados.
+      </footer>
     </main>
   );
 }
