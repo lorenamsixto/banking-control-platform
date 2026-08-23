@@ -25,6 +25,19 @@ services:
       POSTGRES_PORT: 5432
     depends_on:
       - db
+  
+  frontend:
+    build:
+      context: ./frontend
+
+    container_name: banking_frontend
+
+    ports:
+      - "5173:5173"
+
+    depends_on:
+      - backend
+
 
 volumes:
   postgres_data:
