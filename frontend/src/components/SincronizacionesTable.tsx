@@ -12,26 +12,42 @@ export default function SincronizacionesTable() {
 
   const [loading, setLoading] = useState(true);
 
-  const cargarSincronizaciones = async () => {
-    try {
-      const response = await api.get<Sincronizacion[]>(
-        "/sincronizaciones/"
-      );
-
-      setSincronizaciones(response.data);
-    } catch (error) {
-      console.error(
-        "Error al cargar sincronizaciones:",
-        error
-      );
-    } finally {
-      setLoading(false);
-    }
-  };
-
   useEffect(() => {
-    cargarSincronizaciones();
+    const cargarInicial = async () => {
+      try {
+        const response = await api.get<
+          Sincronizacion[]
+        >("/sincronizaciones/");
+
+        setSincronizaciones(response.data);
+      } catch (error) {
+        console.error(
+          "Error al cargar sincronizaciones:",
+          error
+        );
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void cargarInicial();
   }, []);
+
+  const recargarSincronizaciones =
+    async () => {
+      try {
+        const response = await api.get<
+          Sincronizacion[]
+        >("/sincronizaciones/");
+
+        setSincronizaciones(response.data);
+      } catch (error) {
+        console.error(
+          "Error al recargar sincronizaciones:",
+          error
+        );
+      }
+    };
 
   const ejecutarRemediacion = async (
     sincronizacion: Sincronizacion,
@@ -41,14 +57,16 @@ export default function SincronizacionesTable() {
   ) => {
     try {
       await api.post("/remediaciones/", {
-        sincronizacion_id: sincronizacion.id,
+        sincronizacion_id:
+          sincronizacion.id,
         accion_ejecutada: accion,
-        ejecutado_por: "operador_dashboard",
+        ejecutado_por:
+          "operador_dashboard",
         notas:
           "Acción ejecutada desde el dashboard",
       });
 
-      await cargarSincronizaciones();
+      await recargarSincronizaciones();
     } catch (error) {
       console.error(
         "Error al ejecutar remediación:",
@@ -61,7 +79,10 @@ export default function SincronizacionesTable() {
     sincronizacion: Sincronizacion
   ) => (
     <span
-      className={`status-badge status-${sincronizacion.estado}`}
+      className={
+        `status-badge ` +
+        `status-${sincronizacion.estado}`
+      }
     >
       {sincronizacion.estado}
     </span>
@@ -135,12 +156,18 @@ export default function SincronizacionesTable() {
     <section className="dashboard-section">
       <div className="section-header">
         <h2>
-          <i className="pi pi-clock section-icon section-icon-blue" />
+          <i
+            className={
+              "pi pi-clock section-icon " +
+              "section-icon-blue"
+            }
+          />
           Sincronizaciones recientes
         </h2>
 
         <p>
-          Seguimiento de ejecuciones y estados de procesamiento.
+          Seguimiento de ejecuciones y
+          estados de procesamiento.
         </p>
       </div>
 
@@ -159,7 +186,8 @@ export default function SincronizacionesTable() {
             <div className="empty-state">
               <i className="pi pi-inbox" />
               <span>
-                No hay sincronizaciones recientes.
+                No hay sincronizaciones
+                recientes.
               </span>
             </div>
           </>

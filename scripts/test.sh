@@ -6,6 +6,10 @@ echo "Ejecutando tests del backend..."
 
 docker compose exec backend pytest -q
 
+echo "Ejecutando tests del frontend..."
+
+docker compose exec frontend npm run test
+
 echo "Validando build del frontend..."
 
 docker compose exec frontend npm run build

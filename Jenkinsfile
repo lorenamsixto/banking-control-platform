@@ -30,6 +30,8 @@ pipeline {
                     --cov-fail-under=80
                 '''
 
+                sh 'docker compose run --rm frontend npm run test'
+
                 sh 'docker compose run --rm frontend npm run build'
             }
         }
